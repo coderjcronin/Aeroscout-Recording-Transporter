@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	// "log" We'll use this later
 )
 
 func prepRecordings() {
@@ -42,6 +43,10 @@ If all 3 are valid, then return true. Otherwise, either we need this utility mov
 */
 func sanityCheck() bool {
 
+	isThereRecording := false
+
+	// Block to check for the MAPPlaybackFile.dat
+	//
 	entries, err := os.ReadDir("./") // Pull the file listing for the local directory
 
 	// If there was an error, log (well, print) it and return false
@@ -52,6 +57,7 @@ func sanityCheck() bool {
 
 	// Iterate through the listing for a directory
 	for _, file := range entries {
+		fmt.Println(file.Name())
 		if file.IsDir() {
 			tempPath := "./" + file.Name()
 			tempListing, err := os.ReadDir(tempPath)
@@ -60,14 +66,39 @@ func sanityCheck() bool {
 				return false
 			}
 			for _, subFile := range tempListing {
+				fmt.Println(subFile.Name())
 				if subFile.Name() == "MAPPlaybackFile.dat" {
-					break // This isn't right... I need to set something then break so I can break the other loop and avoid the default false. Whoops.
+					isThereRecording = true
+					break // We found the file, that's enough
 				}
 			}
+			//break // We found a directory... either the file was there or not
 		}
-	} // If we found nothing, there's nothing to find and let the default return false
+	}
+	if !isThereRecording {
+		fmt.Println("No MAPPlayback.dat file found!")
+		return false
+	}
+	// End the MAPPlayback block
 
-	return false
+	tempFileForTesting := "./artTest.dat"
+
+	// Write check block
+	f, err := os.Create(tempFileForTesting)
+	if err != nil {
+		fmt.Print(err)
+		return false
+	}
+	f.Close()
+
+	// Delete check block
+	errDel := os.Remove(tempFileForTesting)
+	if errDel != nil {
+		fmt.Print(errDel)
+		return false
+	}
+
+	return true
 }
 
 func main() {

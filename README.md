@@ -16,12 +16,12 @@ Because I know maybe four languages well enough to do this:
  ALE recording sessions are composed of folders containing each distinctive one-click recording. Each folder then contains copies of the ALE's maps and radio maps. On smaller ALE installations this is not an issue, however, on larger enterprise or departmental systems this means copying large amounts of identical data multiple times.
 
  While this doesn't sound like a lot, here's a real world example:
- > Client A is running a VM instance of the ALE on Windows Server, with the ALE living on a separate data drive (E:) allocated to 100 GB.
- > Client A is an enterprise client, running 4 facilities each containing 2 units with a moderate footprint in each unit.
- > Radio Maps for Client A's sites total at approximately 500 MB.
- > Client A is adding a site with a single large footprint, and requires new recording of this area for coverage and accuracy analysis.
- > 100 recordings are made of the new unit footprint to ensure adequate coverage. Each recording, on it's own, is approximately 35 MB plus the copy of the ALE's maps and radio maps.
- > The total session folder size will be 100 times the sum of the average recording size and the size of the ALE's radio maps/maps. This will be about 52.24 GB total, or over half the allocated drive size.
+ > Client A is running a VM instance of the ALE on Windows Server, with the ALE living on a separate data drive (E:) allocated to 100 GB. 
+ > Client A is an enterprise client, running 4 facilities each containing 2 units with a moderate footprint in each unit. 
+ > Radio Maps for Client A's sites total at approximately 500 MB. 
+ > Client A is adding a site with a single large footprint, and requires new recording of this area for coverage and accuracy analysis. 
+ > 100 recordings are made of the new unit footprint to ensure adequate coverage. Each recording, on it's own, is approximately 35 MB plus the copy of the ALE's maps and radio maps. 
+ > The total session folder size will be 100 times the sum of the average recording size and the size of the ALE's radio maps/maps. This will be about 52.24 GB total, or over half the allocated drive size. 
  
  Taking an large chunk of the client's data drive alone could pose a problem (causing a low disk space alert or requiring them to allocate additional space which will incur cost), however, these recordings also need to be uploaded to storage for backup and retrieved as needed for analysis causing cost to be incurred for bandwidth, download time, and storage.
 
@@ -31,3 +31,14 @@ Because I know maybe four languages well enough to do this:
 
  ## Why such verbose comments and ReadMe?
  This application is meant to be used on healthcare client machines. By showing, verbosely, what the application is and what it does I can create accountability and understanding for it's operation. This client has no file transport ability outside the host system, no remote administrative toolkit (RAT), nor does it inject itself or other code into any other part of the client system. By being able to review the code as written prior to compilation and verify that operation my hope is to instill confidence that the best interest of the client's IT security and safety is shown.
+
+### Assumptions
+1. This will only be run within an ALE recording session folder
+2. This will be run only twice (once to prep a recording prior to "transport", once to restore the recording for analysis)
+3. This utility should be "frozen" so a copy can be left within the recording session folder with a small footprint (kb, not mb)
+4. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
+
+ ### TODO
+ - Complete initial prep functions (recording and analysis)
+ - Sanity check to prevent running this outside a recording session
+ - Test to be sure symlinks are allowed for ALE analysis (may need hard links, not tested)

@@ -45,8 +45,6 @@ func sanityCheck() bool {
 
 	isThereRecording := false
 
-	// Block to check for the MAPPlaybackFile.dat
-	//
 	entries, err := os.ReadDir("./") // Pull the file listing for the local directory
 
 	// If there was an error, log (well, print) it and return false
@@ -57,44 +55,40 @@ func sanityCheck() bool {
 
 	// Iterate through the listing for a directory
 	for _, file := range entries {
-		fmt.Println(file.Name())
-		if file.IsDir() {
+		if file.IsDir() { // Found a directory, let's do a write and delete check, then look for our file!
 			tempPath := "./" + file.Name()
-			tempListing, err := os.ReadDir(tempPath)
+			tempFile := tempPath + "/ART.tst"
+
+			f, err := os.Create(tempFile) // Create the temp file, if there's an error we failed
 			if err != nil {
 				fmt.Print(err)
 				return false
 			}
-			for _, subFile := range tempListing {
-				fmt.Println(subFile.Name())
+			f.Close()
+
+			errDel := os.Remove(tempFile) // Remove the temp file, if there's an error we failed
+			if errDel != nil {
+				fmt.Print(errDel)
+				return false
+			}
+
+			tempListing, err := os.ReadDir(tempPath) // Pull the listing for the subdirectory
+			if err != nil {
+				fmt.Print(err)
+				return false
+			}
+
+			for _, subFile := range tempListing { // Check for the MAPPlaybackFile.dat which would denote we're in the session folder and that's a recording in the first folder
 				if subFile.Name() == "MAPPlaybackFile.dat" {
 					isThereRecording = true
 					break // We found the file, that's enough
 				}
 			}
-			//break // We found a directory... either the file was there or not
+			break // We found a directory... either the file was there or not
 		}
 	}
 	if !isThereRecording {
 		fmt.Println("No MAPPlayback.dat file found!")
-		return false
-	}
-	// End the MAPPlayback block
-
-	tempFileForTesting := "./artTest.dat"
-
-	// Write check block
-	f, err := os.Create(tempFileForTesting)
-	if err != nil {
-		fmt.Print(err)
-		return false
-	}
-	f.Close()
-
-	// Delete check block
-	errDel := os.Remove(tempFileForTesting)
-	if errDel != nil {
-		fmt.Print(errDel)
 		return false
 	}
 
@@ -103,7 +97,7 @@ func sanityCheck() bool {
 
 func main() {
 
-	// Sanity check - check the first child directory to see if we're in a recording session.
+	// Sanity check - check the first child directory to see if we're in a recording session. Also check write/delete
 	weGood := sanityCheck()
 
 	if !weGood {

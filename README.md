@@ -39,6 +39,7 @@ Because I know maybe four languages well enough to do this:
 4. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
 
  ### TODO
- - Complete initial prep functions (recording and analysis)
- - Sanity check to prevent running this outside a recording session
+ - ~~Complete initial prep functions (recording and analysis)~~
+ - ~~Sanity check to prevent running this outside a recording session~~
  - Test to be sure symlinks are allowed for ALE analysis (may need hard links, not tested)
+ - Output log to a text file with time stamp for tracking

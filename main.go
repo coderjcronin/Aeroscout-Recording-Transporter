@@ -25,6 +25,7 @@ func prepRecordings() {
 	entries, err := os.ReadDir(initialPath)
 	if err != nil {
 		log.Panic(err) // if there's an error, log and exit (sanity check should of caught this but admin may have changed things on us during execution)
+		return
 	}
 
 	for _, entry := range entries {
@@ -39,16 +40,18 @@ func prepRecordings() {
 
 			errRadioMaps := os.RemoveAll(tempRadioMaps)
 			if errRadioMaps != nil {
-				log.Panic(err)
+				log.Panic(err) // Something didn't work, probably permissions or file in use
+				return
 			} else {
-				log.Println("Deleted: " + tempRadioMaps)
+				log.Println("Deleted: " + tempRadioMaps) // Log and move on
 			}
 
 			errMaps := os.RemoveAll(tempMaps)
 			if errMaps != nil {
-				log.Panic(err)
+				log.Panic(err) // Something didn't work, probably permissions or file in use
+				return
 			} else {
-				log.Println("Deleted: " + tempMaps)
+				log.Println("Deleted: " + tempMaps) // Log and move on
 			}
 
 		}
@@ -65,9 +68,10 @@ Iterates through recording directorties, save the first directory path for Radio
 func prepAnalysis() {
 	firstDirectory := true
 
-	initialPath := filepath.Base(".")
-	parentRadioMaps := initialPath
-	parentMaps := initialPath
+	// Setup initial path and prep parent folders
+	initialPath, _ := os.Getwd()
+	parentRadioMaps, _ := os.Getwd()
+	parentMaps, _ := os.Getwd()
 
 	entries, err := os.ReadDir(initialPath)
 	if err != nil {
@@ -76,7 +80,7 @@ func prepAnalysis() {
 
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if firstDirectory {
+			if firstDirectory { // First directory should contain pristine Maps and RadioMaps; set the parent variables and move on with the loop
 				parentMaps = filepath.Join(initialPath, entry.Name(), "Maps")
 				parentRadioMaps = filepath.Join(initialPath, entry.Name(), "RadioMaps")
 				firstDirectory = false
@@ -90,12 +94,18 @@ func prepAnalysis() {
 
 			errLinkMaps := os.Symlink(parentMaps, tempMaps)
 			if errLinkMaps != nil {
-				log.Panic(errLinkMaps)
+				log.Panic(errLinkMaps) // Something didn't work creating the symlink
+				return
+			} else {
+				log.Println("Created symlink: " + tempMaps) // It worked, log and move on
 			}
 
 			errLinkRadioMaps := os.Symlink(parentRadioMaps, tempRadioMaps)
 			if errLinkRadioMaps != nil {
-				log.Panic(errLinkRadioMaps)
+				log.Panic(errLinkRadioMaps) // Something didn't work creating the symlink
+				return
+			} else {
+				log.Println("Created symlink: " + tempRadioMaps) // It worked, log and move on
 			}
 
 		}
@@ -120,6 +130,7 @@ func mainMenu() int {
 
 	if err != nil {
 		log.Panic(err)
+		return 0
 	}
 
 	return returnValue
@@ -145,6 +156,7 @@ func sanityCheck() {
 	// If there was an error, log (well, print) it and return false
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
 	// Iterate through the listing for a directory
@@ -156,17 +168,20 @@ func sanityCheck() {
 			f, err := os.Create(tempFile) // Create the temp file, if there's an error we failed
 			if err != nil {
 				log.Fatal(err)
+				return
 			}
 			f.Close()
 
 			errDel := os.Remove(tempFile) // Remove the temp file, if there's an error we failed
 			if errDel != nil {
 				log.Fatal(errDel)
+				return
 			}
 
 			tempListing, err := os.ReadDir(tempPath) // Pull the listing for the subdirectory
 			if err != nil {
 				log.Fatal(err)
+				return
 			}
 
 			for _, subFile := range tempListing { // Check for the MAPPlaybackFile.dat which would denote we're in the session folder and that's a recording in the first folder
@@ -180,6 +195,7 @@ func sanityCheck() {
 	}
 	if !isThereRecording {
 		log.Fatal("No MAPPlayback.dat file found!")
+		return
 	}
 
 }

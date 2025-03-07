@@ -1,18 +1,106 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"syscall"
+
+	"golang.org/x/sys/windows"
 )
 
+/*
+	prepRecordings
+
+Iterate through the recording subdirectories, removing RadioMaps and Maps, preserving the first iteration for restoration
+*/
 func prepRecordings() {
-	//TODO - Fill this out
+	firstDirectory := true
+
+	initialPath := filepath.Base(".")
+
+	entries, err := os.ReadDir(initialPath)
+	if err != nil {
+		log.Panic(err) // if there's an error, log and exit (sanity check should of caught this but admin may have changed things on us during execution)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if firstDirectory { // Skip the first directory.
+				log.Println("Skipping first directory, " + filepath.Join(initialPath, entry.Name()))
+				firstDirectory = false
+				continue
+			}
+			tempRadioMaps := filepath.Join(initialPath, entry.Name(), "RadioMaps")
+			tempMaps := filepath.Join(initialPath, entry.Name(), "Maps")
+
+			errRadioMaps := os.RemoveAll(tempRadioMaps)
+			if errRadioMaps != nil {
+				log.Panic(err)
+			} else {
+				log.Println("Deleted: " + tempRadioMaps)
+			}
+
+			errMaps := os.RemoveAll(tempMaps)
+			if errMaps != nil {
+				log.Panic(err)
+			} else {
+				log.Println("Deleted: " + tempMaps)
+			}
+
+		}
+	}
+	log.Println("Transport processing has been completed.")
+	os.Exit(0)
 }
 
+/*
+	prepAnalysis
+
+Iterates through recording directorties, save the first directory path for RadioMaps and Maps, then create symlinks in all other subdirectories
+*/
 func prepAnalysis() {
-	//TODO - Fill this out
+	firstDirectory := true
+
+	initialPath := filepath.Base(".")
+	parentRadioMaps := initialPath
+	parentMaps := initialPath
+
+	entries, err := os.ReadDir(initialPath)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	for _, entry := range entries {
+		if entry.IsDir() {
+			if firstDirectory {
+				parentMaps = filepath.Join(initialPath, entry.Name(), "Maps")
+				parentRadioMaps = filepath.Join(initialPath, entry.Name(), "RadioMaps")
+				firstDirectory = false
+				log.Println("Initial Radio Maps: " + parentRadioMaps)
+				log.Println("Initial Maps: " + parentMaps)
+				continue
+			}
+
+			tempMaps := filepath.Join(initialPath, entry.Name(), "Maps")
+			tempRadioMaps := filepath.Join(initialPath, entry.Name(), "RadioMaps")
+
+			errLinkMaps := os.Symlink(parentMaps, tempMaps)
+			if errLinkMaps != nil {
+				log.Panic(errLinkMaps)
+			}
+
+			errLinkRadioMaps := os.Symlink(parentRadioMaps, tempRadioMaps)
+			if errLinkRadioMaps != nil {
+				log.Panic(errLinkRadioMaps)
+			}
+
+		}
+	}
+
 }
 
 /*
@@ -24,18 +112,17 @@ Simply displays the utility main menu and returns an int indicating the user's s
 Anything else - Exit
 */
 func mainMenu() int {
-	userInput := bufio.NewReader(os.Stdin)
+	//userInput := bufio.NewReader(os.Stdin)
+	var returnValue int
 
 	fmt.Print("Please select an operation mode:\n\t1) Prepare recordings for transport or storage\n\t2) Prepare recordings for analysis and reporting\n\nPlease type the number followed by the ENTER key (invalid response will exit): ")
-	programMode, _ := userInput.ReadString('\n')
+	_, err := fmt.Scanf("%d", &returnValue)
 
-	if programMode == "1" {
-		return 1
-	} else if programMode == "2" {
-		return 2
+	if err != nil {
+		log.Panic(err)
 	}
 
-	return 0
+	return returnValue
 }
 
 /*
@@ -51,8 +138,9 @@ If we fail at any point, log.Fatal() is raised which will cause an os.Exit() and
 func sanityCheck() {
 
 	isThereRecording := false
+	baseDirectory := filepath.Base(".")
 
-	entries, err := os.ReadDir("./") // Pull the file listing for the local directory
+	entries, err := os.ReadDir(baseDirectory) // Pull the file listing for the local directory
 
 	// If there was an error, log (well, print) it and return false
 	if err != nil {
@@ -60,10 +148,10 @@ func sanityCheck() {
 	}
 
 	// Iterate through the listing for a directory
-	for _, file := range entries {
-		if file.IsDir() { // Found a directory, let's do a write and delete check, then look for our file!
-			tempPath := "./" + file.Name()
-			tempFile := tempPath + "/ART.tst"
+	for _, entry := range entries {
+		if entry.IsDir() { // Found a directory, let's do a write and delete check, then look for our file!
+			tempPath := filepath.Join(baseDirectory, entry.Name())
+			tempFile := filepath.Join(tempPath, "ART.tst")
 
 			f, err := os.Create(tempFile) // Create the temp file, if there's an error we failed
 			if err != nil {
@@ -96,7 +184,53 @@ func sanityCheck() {
 
 }
 
+/*
+	checkForAdmin
+
+Return true if we can read C: (physicaldrive0), false if not so we can ask for UAC admin
+*/
+func checkForAdmin() bool {
+	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+/*
+	runMeElevated
+
+Ask to relaunch with UAC admin access
+*/
+func runMeElevated() {
+	verb := "runas"
+	exe, _ := os.Executable()
+	cwd, _ := os.Getwd()
+	args := strings.Join(os.Args[1:], " ")
+
+	verbPtr, _ := syscall.UTF16PtrFromString(verb)
+	exePtr, _ := syscall.UTF16PtrFromString(exe)
+	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
+	argPtr, _ := syscall.UTF16PtrFromString(args)
+
+	var showCmd int32 = 1 //SW_NORMAL
+
+	err := windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
 func main() {
+
+	// Request UAC elevated execution if we're on Win32
+	os := runtime.GOOS
+	if os == "windows" {
+		if !checkForAdmin() {
+			runMeElevated()
+		}
+	}
 
 	// Sanity check - check the first child directory to see if we're in a recording session. Also check write/delete.
 	// It will force os.Exit() if operations don't work.
@@ -105,6 +239,8 @@ func main() {
 	// Go "while True" loop. Will exit when menuSelection is invalid
 	for {
 		menuSelection := mainMenu() // Show main menu to select function
+
+		fmt.Println(menuSelection)
 
 		if menuSelection == 1 {
 			prepRecordings() // User selected to prep recordings, run function

@@ -192,10 +192,7 @@ Return true if we can read C: (physicaldrive0), false if not so we can ask for U
 func checkForAdmin() bool {
 	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
 
-	if err != nil {
-		return false
-	}
-	return true
+	return err == nil
 }
 
 /*

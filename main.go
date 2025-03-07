@@ -76,6 +76,7 @@ func prepAnalysis() {
 	entries, err := os.ReadDir(initialPath)
 	if err != nil {
 		log.Panic(err)
+		return
 	}
 
 	for _, entry := range entries {
@@ -110,6 +111,8 @@ func prepAnalysis() {
 
 		}
 	}
+	log.Println("Analysis processing has been completed.")
+	os.Exit(0)
 
 }
 
@@ -122,7 +125,7 @@ Simply displays the utility main menu and returns an int indicating the user's s
 Anything else - Exit
 */
 func mainMenu() int {
-	//userInput := bufio.NewReader(os.Stdin)
+
 	var returnValue int
 
 	fmt.Print("Please select an operation mode:\n\t1) Prepare recordings for transport or storage\n\t2) Prepare recordings for analysis and reporting\n\nPlease type the number followed by the ENTER key (invalid response will exit): ")
@@ -243,7 +246,7 @@ func main() {
 		if !checkForAdmin() {
 			log.Println("Not in UAC Admin, relaunching....")
 			runMeElevated()
-			return
+			os.Exit(0)
 		}
 	}
 

@@ -16,16 +16,11 @@ Because I know maybe four languages well enough to do this:
  ALE recording sessions are composed of folders containing each distinctive one-click recording. Each folder then contains copies of the ALE's maps and radio maps. On smaller ALE installations this is not an issue, however, on larger enterprise or departmental systems this means copying large amounts of identical data multiple times.
 
  While this doesn't sound like a lot, here's a real world example:
- > Client A is running a VM instance of the ALE on Windows Server, with the ALE living on a separate data drive (E:) allocated to 100 GB. 
- > Client A is an enterprise client, running 4 facilities each containing 2 units with a moderate footprint in each unit. 
- > Radio Maps for Client A's sites total at approximately 500 MB. 
- > Client A is adding a site with a single large footprint, and requires new recording of this area for coverage and accuracy analysis. 
- > 100 recordings are made of the new unit footprint to ensure adequate coverage. Each recording, on it's own, is approximately 35 MB plus the copy of the ALE's maps and radio maps. 
- > The total session folder size will be 100 times the sum of the average recording size and the size of the ALE's radio maps/maps. This will be about 52.24 GB total, or over half the allocated drive size. 
+Client A is an enterprise client whose ALE is tracking 5 facilities with an average of 2 units per facility (10 tracked areas). They are adding a new unit to an existing facility, requiring recordings of the base floor of the facility plus two tower floors. The base floor takes 100 recordings while the two tower floors are 40 recordings each. The total size of the three sessions will be the sum of Maps, RadioMaps, and a recording multiplied 180 times. In this example, RadioMaps and Maps weigh in at 600 MB while an average recording is 37.3 MB; this bring the total to 112 GB ((180 * (600 + 37.3)) / 1024). 
  
  Taking an large chunk of the client's data drive alone could pose a problem (causing a low disk space alert or requiring them to allocate additional space which will incur cost), however, these recordings also need to be uploaded to storage for backup and retrieved as needed for analysis causing cost to be incurred for bandwidth, download time, and storage.
 
- Using ART in the above Client A example, we get rid of 99 of the 100 copies of the Radio Maps and Maps, reducing size from 52.24 GB to 3.9 GB (99 times the average size of recording plus the sum of the recording and a single copy of the maps) for a size reduction of 93%. This will ease file transfer and cloud storage as well as mean less downtime for technicians working with the recordings waiting for file operations to be executed.
+ Using ART in the above Client A example, we get rid of 177 of the 180 copies of the Radio Maps and Maps, reducing size from 112 GB to 8.3 GB (180 times the average size of recording plus three copies of the maps) for a size reduction of 93%. This will ease file transfer and cloud storage as well as mean less downtime for technicians working with the recordings waiting for file operations to be executed.
 
  Since the Radio Maps and Maps folders are identiical across all recordings of a session (unless someone is editing maps in the ALE during recording, which is against Best Practices) we can simply iterate symbolic links (TODO: Make sure symbolic works... may have to switch to hard) in the other folders.
 
@@ -37,6 +32,21 @@ Because I know maybe four languages well enough to do this:
 2. This will be run only twice (once to prep a recording prior to "transport", once to restore the recording for analysis)
 3. This utility should be "frozen" so a copy can be left within the recording session folder with a small footprint (kb, not mb)
 4. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
+
+### Recording Session Tree
+Folders for recording sessions are typically laid out as such:
+- 2000-01-01 Client Facility Area
+  - Datetime stamp
+    - Maps
+    - RadioMaps
+    - MAPPlaybackFile.dat
+    - _Other files that we don't need to worry about_
+  - Datatime Stamp
+    - Maps
+    - RadioMaps
+    - MAPPlaybackFile.dat
+    - _Other files that we still don't worry about_
+  - _Repeat for other recordings if present_
 
  ### TODO
  - ~~Complete initial prep functions (recording and analysis)~~

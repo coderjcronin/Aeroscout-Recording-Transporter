@@ -238,12 +238,31 @@ func runMeElevated() {
 func main() {
 
 	// Request UAC elevated execution if we're on Win32
-	os := runtime.GOOS
-	if os == "windows" {
+	osType := runtime.GOOS
+	if osType == "windows" {
 		if !checkForAdmin() {
+			log.Println("Not in UAC Admin, relaunching....")
 			runMeElevated()
+			return
 		}
 	}
+
+	// Setup log to file
+	logFile := filepath.Join(".", "log.log")
+
+	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	//defer close when we're done
+	defer f.Close()
+
+	//set logger to use the f (logfile)
+	log.SetOutput(f)
+
+	//log and move on
+	log.Println("Logging set to log file: " + logFile)
 
 	// Sanity check - check the first child directory to see if we're in a recording session. Also check write/delete.
 	// It will force os.Exit() if operations don't work.

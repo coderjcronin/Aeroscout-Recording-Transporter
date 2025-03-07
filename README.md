@@ -42,4 +42,4 @@ Because I know maybe four languages well enough to do this:
  - ~~Complete initial prep functions (recording and analysis)~~
  - ~~Sanity check to prevent running this outside a recording session~~
  - Test to be sure symlinks are allowed for ALE analysis (may need hard links, not tested)
- - Output log to a text file with time stamp for tracking
+ - ~~Output log to a text file with time stamp for tracking~~

@@ -5,3 +5,5 @@
 Test Recording - IGNORE
 .git
 .gitignore
+__debug*
+log.log

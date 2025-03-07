@@ -3,7 +3,7 @@
 ## What is this?
 This program, written in Go, is meant to be a utiliy for preparing recording sessions made by the Aeroscout Location Engine (ALE) to minimize their footprint for transport as well as restore their layout for recording analysis/reporting.
 
-This is accomplish by iterating through the recording folders within the session, deleting all but the first instance of the RadioMaps and Maps folders (since these folders are identical through recordings), then restoring the directory layout via symbolic links when needed for analysis.
+This is accomplish by iterating through the recording folders within the session, deleting all but the first instance of the RadioMaps and Maps folders (since these folders are identical through recordings), then zip archiving the recording session when ready.
 
 ## Why Go?
 Because I know maybe four languages well enough to do this:
@@ -22,14 +22,13 @@ Client A is an enterprise client whose ALE is tracking 5 facilities with an aver
 
  Using ART in the above Client A example, we get rid of 177 of the 180 copies of the Radio Maps and Maps, reducing size from 112 GB to 8.3 GB (180 times the average size of recording plus three copies of the maps) for a size reduction of 93%. This will ease file transfer and cloud storage as well as mean less downtime for technicians working with the recordings waiting for file operations to be executed.
 
- Since the Radio Maps and Maps folders are identiical across all recordings of a session (unless someone is editing maps in the ALE during recording, which is against Best Practices) we can simply iterate symbolic links (TODO: Make sure symbolic works... may have to switch to hard) in the other folders.
-
+Testing has found that the ALE only care about RadioMaps and Maps in the first recording folder (as of 5.7, at least). So we will concentrate on cleaning up the recording session folder and potentially zip archiving the session for transfer.
  ## Why such verbose comments and ReadMe?
  This application is meant to be used on healthcare client machines. By showing, verbosely, what the application is and what it does I can create accountability and understanding for it's operation. This client has no file transport ability outside the host system, no remote administrative toolkit (RAT), nor does it inject itself or other code into any other part of the client system. By being able to review the code as written prior to compilation and verify that operation my hope is to instill confidence that the best interest of the client's IT security and safety is shown.
 
 ### Assumptions
 1. This will only be run within an ALE recording session folder
-2. This will be run only twice (once to prep a recording prior to "transport", once to restore the recording for analysis)
+2. ~This will be run only twice (once to prep a recording prior to "transport", once to restore the recording for analysis)~
 3. This utility should be "frozen" so a copy can be left within the recording session folder with a small footprint (kb, not mb)
 4. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
 
@@ -37,6 +36,7 @@ Client A is an enterprise client whose ALE is tracking 5 facilities with an aver
 Folders for recording sessions are typically laid out as such:
 - 2000-01-01 Client Facility Area
   - Datetime stamp
+    - Devices
     - Maps
     - RadioMaps
     - MAPPlaybackFile.dat
@@ -49,7 +49,7 @@ Folders for recording sessions are typically laid out as such:
   - _Repeat for other recordings if present_
 
  ### TODO
- - ~~Complete initial prep functions (recording and analysis)~~
- - ~~Sanity check to prevent running this outside a recording session~~
- - Test to be sure symlinks are allowed for ALE analysis (may need hard links, not tested)
- - ~~Output log to a text file with time stamp for tracking~~
+ - Refactor as testing showed the ALE only cares about Maps and RadioMaps in the **first recording folder**
+   - Remove Processing for Analysis
+   - Rename "Processing for Transport" to "Clean Recording Session"
+   - Add "Archive for Transport" (testing found zip archive further reduced size to < 10%, ideal for easy upload and storage)

@@ -1,15 +1,13 @@
 package main
 
 import (
+	"archive/zip"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
-	"syscall"
-
-	"golang.org/x/sys/windows"
 )
 
 /*
@@ -66,7 +64,63 @@ func cleanRecordings() {
 Send contents to session folder (excluding ART) to a zip archive outside the session folder
 */
 func prepTransfer() {
-	// TODO
+	// Get session name (it's the parent folder)
+	fullDir, _ := os.Getwd()
+	parentDir := filepath.Base(fullDir)
+	zipPath := filepath.Join("..", parentDir+".zip") // Create zip file outside parent folder (help avoid having to skip it)
+
+	file, err := os.Create(zipPath) // Create the zip file
+	if err != nil {
+		log.Panic(err) // Panic on error and exit
+		return
+	}
+
+	defer file.Close() // Defer file close... we don't need it closed now but we will
+
+	w := zip.NewWriter(file) // Setup a new writer into the zip file we made
+	defer w.Close()          // Defer file close
+
+	// local function for adding files to the zip file as they're walked by filepath.Walk()
+	walker := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err // We shouldn't start with an error...
+		}
+		if info.IsDir() {
+			return nil // We don't need empty directories
+		}
+
+		pathInZip := strings.TrimLeft(path, fmt.Sprintf("..%c", os.PathSeparator)) // Correct the path for the zip folder... it gets messy doing ../ in a zip
+
+		file, err := os.Open(path)
+		if err != nil {
+			return err // If we can't open the file to add to the zip, error out
+		}
+		defer file.Close()
+
+		if filepath.Base(file.Name()) == "ART.exe" || filepath.Base(file.Name()) == "log.log" { // We don't want to zip this program or it's log
+			return nil
+		}
+
+		f, err := w.Create(pathInZip)
+		if err != nil {
+			return err // If we can't add to the zip, error out
+		}
+
+		_, err = io.Copy(f, file) // Finally, copy the file into the zip archive
+		if err != nil {
+			return err // If it didn't work, error out
+		} else {
+			log.Println("Adding: " + pathInZip) // Otherwise, log the add and move on
+		}
+
+		return nil
+	}
+	err = filepath.Walk(filepath.Join("..", parentDir), walker) // Walk the directory path starting at parent directory, calling the local walker() function to add to zip
+	if err != nil {
+		log.Panic(err)
+		return
+	}
+
 }
 
 /*
@@ -157,57 +211,11 @@ func sanityCheck() {
 }
 
 /*
-	checkForAdmin
-
-Return true if we can read C: (physicaldrive0), false if not so we can ask for UAC admin
-*/
-func checkForAdmin() bool {
-	_, err := os.Open("\\\\.\\PHYSICALDRIVE0")
-
-	return err == nil
-}
-
-/*
-	runMeElevated
-
-Ask to relaunch with UAC admin access
-*/
-func runMeElevated() {
-	verb := "runas"
-	exe, _ := os.Executable()
-	cwd, _ := os.Getwd()
-	args := strings.Join(os.Args[1:], " ")
-
-	verbPtr, _ := syscall.UTF16PtrFromString(verb)
-	exePtr, _ := syscall.UTF16PtrFromString(exe)
-	cwdPtr, _ := syscall.UTF16PtrFromString(cwd)
-	argPtr, _ := syscall.UTF16PtrFromString(args)
-
-	var showCmd int32 = 1 //SW_NORMAL
-
-	err := windows.ShellExecute(0, verbPtr, exePtr, argPtr, cwdPtr, showCmd)
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-/*
 	main
 
-Main program loop. It probably doesn't need to be a loop.
+Main call
 */
 func main() {
-
-	// Request UAC elevated execution if we're on Win32
-	// Do I need this anymore? We're not making symbolic links so shouldn't need elevated access?
-	osType := runtime.GOOS
-	if osType == "windows" {
-		if !checkForAdmin() {
-			log.Println("Not in UAC Admin, relaunching....")
-			runMeElevated()
-			os.Exit(0)
-		}
-	}
 
 	// Setup log to file
 	logFile := filepath.Join(".", "log.log")

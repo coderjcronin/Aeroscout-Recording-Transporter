@@ -29,9 +29,8 @@ Testing has found that the ALE only care about RadioMaps and Maps in the first r
 
 ### Assumptions
 1. This will only be run within an ALE recording session folder
-2. ~This will be run only twice (once to prep a recording prior to "transport", once to restore the recording for analysis)~
-3. This utility should be "frozen" so a copy can be left within the recording session folder with a small footprint (kb, not mb)
-4. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
+2. This utility should be "frozen" so a copy can be left within the recording session folder with a small footprint (kb, not mb)
+3. CLI is fine with minimal user interface (I really don't feel like doing flags for true CLI interface but I will if there's a need)
 
 ### Recording Session Tree
 Folders for recording sessions are typically laid out as such:
@@ -48,9 +47,3 @@ Folders for recording sessions are typically laid out as such:
     - MAPPlaybackFile.dat
     - _Other files that we still don't worry about_
   - _Repeat for other recordings if present_
-
- ### TODO
- - Refactor as testing showed the ALE only cares about Maps and RadioMaps in the **first recording folder**
-   - Remove Processing for Analysis
-   - Rename "Processing for Transport" to "Clean Recording Session"
-   - Add "Archive for Transport" (testing found zip archive further reduced size to < 10%, ideal for easy upload and storage)

@@ -13,11 +13,11 @@ import (
 )
 
 /*
-	prepRecordings
+	cleanRecordings
 
-Iterate through the recording subdirectories, removing RadioMaps and Maps, preserving the first iteration for restoration
+Iterate through the recording subdirectories, removing RadioMaps and Maps, preserving the first iteration for the ALE
 */
-func prepRecordings() {
+func cleanRecordings() {
 	firstDirectory := true
 
 	initialPath := filepath.Base(".")
@@ -56,64 +56,17 @@ func prepRecordings() {
 
 		}
 	}
-	log.Println("Transport processing has been completed.")
+	log.Println("Session cleaning has been completed.")
 	os.Exit(0)
 }
 
 /*
-	prepAnalysis
+	prepTransfer
 
-Iterates through recording directorties, save the first directory path for RadioMaps and Maps, then create symlinks in all other subdirectories
+Send contents to session folder (excluding ART) to a zip archive outside the session folder
 */
-func prepAnalysis() {
-	firstDirectory := true
-
-	// Setup initial path and prep parent folders
-	initialPath, _ := os.Getwd()
-	parentRadioMaps, _ := os.Getwd()
-	parentMaps, _ := os.Getwd()
-
-	entries, err := os.ReadDir(initialPath)
-	if err != nil {
-		log.Panic(err)
-		return
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			if firstDirectory { // First directory should contain pristine Maps and RadioMaps; set the parent variables and move on with the loop
-				parentMaps = filepath.Join(initialPath, entry.Name(), "Maps")
-				parentRadioMaps = filepath.Join(initialPath, entry.Name(), "RadioMaps")
-				firstDirectory = false
-				log.Println("Initial Radio Maps: " + parentRadioMaps)
-				log.Println("Initial Maps: " + parentMaps)
-				continue
-			}
-
-			tempMaps := filepath.Join(initialPath, entry.Name(), "Maps")
-			tempRadioMaps := filepath.Join(initialPath, entry.Name(), "RadioMaps")
-
-			errLinkMaps := os.Symlink(parentMaps, tempMaps)
-			if errLinkMaps != nil {
-				log.Panic(errLinkMaps) // Something didn't work creating the symlink
-				return
-			} else {
-				log.Println("Created symlink: " + tempMaps) // It worked, log and move on
-			}
-
-			errLinkRadioMaps := os.Symlink(parentRadioMaps, tempRadioMaps)
-			if errLinkRadioMaps != nil {
-				log.Panic(errLinkRadioMaps) // Something didn't work creating the symlink
-				return
-			} else {
-				log.Println("Created symlink: " + tempRadioMaps) // It worked, log and move on
-			}
-
-		}
-	}
-	log.Println("Analysis processing has been completed.")
-	os.Exit(0)
-
+func prepTransfer() {
+	// TODO
 }
 
 /*
@@ -128,7 +81,7 @@ func mainMenu() int {
 
 	var returnValue int
 
-	fmt.Print("Please select an operation mode:\n\t1) Prepare recordings for transport or storage\n\t2) Prepare recordings for analysis and reporting\n\nPlease type the number followed by the ENTER key (invalid response will exit): ")
+	fmt.Print("Please select an operation mode:\n\t1) Clean recording session\n\t2) Prepare session for transfer or storage\n\nPlease type the number followed by the ENTER key (invalid response will exit): ")
 	_, err := fmt.Scanf("%d", &returnValue)
 
 	if err != nil {
@@ -143,7 +96,7 @@ func mainMenu() int {
 	sanityCheck() - returns boolean based on environment values
 
 sanityCheck will check that:
-1. We're in a recording session folder (there's a child folder with MAPPlaybackFile.dat)
+1. We're in a recording session folder (there's a child folder with MAPPlaybackFile.dat in the first directory we walk to)
 2. That we can create a file
 3. That we can delete the file we created
 
@@ -238,9 +191,15 @@ func runMeElevated() {
 	}
 }
 
+/*
+	main
+
+Main program loop. It probably doesn't need to be a loop.
+*/
 func main() {
 
 	// Request UAC elevated execution if we're on Win32
+	// Do I need this anymore? We're not making symbolic links so shouldn't need elevated access?
 	osType := runtime.GOOS
 	if osType == "windows" {
 		if !checkForAdmin() {
@@ -271,18 +230,11 @@ func main() {
 	// It will force os.Exit() if operations don't work.
 	sanityCheck()
 
-	// Go "while True" loop. Will exit when menuSelection is invalid
-	for {
-		menuSelection := mainMenu() // Show main menu to select function
-
-		fmt.Println(menuSelection)
-
-		if menuSelection == 1 {
-			prepRecordings() // User selected to prep recordings, run function
-		} else if menuSelection == 2 {
-			prepAnalysis() // User selected to prep analysis, run function
-		} else {
-			return // Leave the loop and function, we're done
-		}
+	// Main Menu selection
+	menuSelection := mainMenu() // Show main menu to select function
+	if menuSelection == 1 {
+		cleanRecordings() // User selected to clean recordings, run function
+	} else if menuSelection == 2 {
+		prepTransfer() // User selected to prep for transfer or storage, run function
 	}
 }

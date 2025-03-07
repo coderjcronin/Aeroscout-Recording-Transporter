@@ -23,6 +23,7 @@ Client A is an enterprise client whose ALE is tracking 5 facilities with an aver
  Using ART in the above Client A example, we get rid of 177 of the 180 copies of the Radio Maps and Maps, reducing size from 112 GB to 8.3 GB (180 times the average size of recording plus three copies of the maps) for a size reduction of 93%. This will ease file transfer and cloud storage as well as mean less downtime for technicians working with the recordings waiting for file operations to be executed.
 
 Testing has found that the ALE only care about RadioMaps and Maps in the first recording folder (as of 5.7, at least). So we will concentrate on cleaning up the recording session folder and potentially zip archiving the session for transfer.
+
  ## Why such verbose comments and ReadMe?
  This application is meant to be used on healthcare client machines. By showing, verbosely, what the application is and what it does I can create accountability and understanding for it's operation. This client has no file transport ability outside the host system, no remote administrative toolkit (RAT), nor does it inject itself or other code into any other part of the client system. By being able to review the code as written prior to compilation and verify that operation my hope is to instill confidence that the best interest of the client's IT security and safety is shown.
 

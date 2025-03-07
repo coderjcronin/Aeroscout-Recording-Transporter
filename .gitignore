@@ -7,3 +7,5 @@ Test Recording - IGNORE
 .gitignore
 __debug*
 log.log
+ART.exe
+main.exe

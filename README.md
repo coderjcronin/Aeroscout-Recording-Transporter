@@ -1,5 +1,12 @@
 # Aeroscout Recording Transporter (ART)
 
+## Usage
+Copy ART.exe into the recording session folder and either run directly for simple main menu interface or via `-m=<flag>` for automatic execution of either cleaning or archiving utilities.
+
+Mode selection Flags `-m`
+`clean` - Executes cleaning function, bypass main menu
+`archive` - Executes archive function, bypass main menu
+
 ## What is this?
 This program, written in Go, is meant to be a utiliy for preparing recording sessions made by the Aeroscout Location Engine (ALE) to minimize their footprint for transport as well as restore their layout for recording analysis/reporting.
 

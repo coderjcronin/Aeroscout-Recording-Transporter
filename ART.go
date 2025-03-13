@@ -2,6 +2,7 @@ package main
 
 import (
 	"archive/zip"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -31,6 +32,7 @@ func cleanRecordings() {
 			if firstDirectory { // Skip the first directory.
 				log.Println("Skipping first directory, " + filepath.Join(initialPath, entry.Name()))
 				firstDirectory = false
+				fmt.Print("1 ")
 				continue
 			}
 			tempRadioMaps := filepath.Join(initialPath, entry.Name(), "RadioMaps")
@@ -38,23 +40,27 @@ func cleanRecordings() {
 
 			errRadioMaps := os.RemoveAll(tempRadioMaps)
 			if errRadioMaps != nil {
-				log.Panic(err) // Something didn't work, probably permissions or file in use
+				log.Println(err) // Something didn't work, probably permissions or file in use
 				return
 			} else {
 				log.Println("Deleted: " + tempRadioMaps) // Log and move on
 			}
+			fmt.Print("rm ")
 
 			errMaps := os.RemoveAll(tempMaps)
 			if errMaps != nil {
-				log.Panic(err) // Something didn't work, probably permissions or file in use
+				log.Println(err) // Something didn't work, probably permissions or file in use
 				return
 			} else {
 				log.Println("Deleted: " + tempMaps) // Log and move on
 			}
+			fmt.Print("r ")
 
 		}
 	}
-	log.Println("Session cleaning has been completed.")
+
+	log.Println("Session cleaning completed.")
+	fmt.Println("\nSession cleaning complete. Please check log for errors, if any.")
 	os.Exit(0)
 }
 
@@ -71,7 +77,7 @@ func prepTransfer() {
 
 	file, err := os.Create(zipPath) // Create the zip file
 	if err != nil {
-		log.Panic(err) // Panic on error and exit
+		log.Fatal(err) // Panic on error and exit
 		return
 	}
 
@@ -113,13 +119,16 @@ func prepTransfer() {
 			log.Println("Adding: " + pathInZip) // Otherwise, log the add and move on
 		}
 
+		fmt.Print("z ")
 		return nil
 	}
 	err = filepath.Walk(filepath.Join("..", parentDir), walker) // Walk the directory path starting at parent directory, calling the local walker() function to add to zip
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 		return
 	}
+
+	fmt.Println("\nArchiving complete. Please check log file for errors, if any.")
 
 }
 
@@ -130,6 +139,8 @@ Simply displays the utility main menu and returns an int indicating the user's s
 1 - Process recordings for transport
 2 - Process recordings for analysis
 Anything else - Exit
+
+Will only display if no flags are presented at command line
 */
 func mainMenu() int {
 
@@ -204,6 +215,7 @@ func sanityCheck() {
 		}
 	}
 	if !isThereRecording {
+		fmt.Println("No MAPPlayback.dat file found, exiting.")
 		log.Fatal("No MAPPlayback.dat file found!")
 		return
 	}
@@ -222,6 +234,7 @@ func main() {
 
 	f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
+		fmt.Println("Failed to create log, check file permissions.")
 		log.Fatal(err)
 	}
 
@@ -233,16 +246,45 @@ func main() {
 
 	//log and move on
 	log.Println("Logging set to log file: " + logFile)
+	fmt.Println("Created log file.")
 
 	// Sanity check - check the first child directory to see if we're in a recording session. Also check write/delete.
 	// It will force os.Exit() if operations don't work.
 	sanityCheck()
+	log.Println("Sanity check completed.")
+	fmt.Println("Sanity check completed.")
 
-	// Main Menu selection
-	menuSelection := mainMenu() // Show main menu to select function
-	if menuSelection == 1 {
-		cleanRecordings() // User selected to clean recordings, run function
-	} else if menuSelection == 2 {
-		prepTransfer() // User selected to prep for transfer or storage, run function
+	//Flag setup
+	flagPtr := flag.String("m", "default", "set mode and override main menu")
+
+	flag.Parse()
+
+	//Check -m (mode) command line flag
+	if *flagPtr == "default" { // If -m is set to default (not used), show main menu for interface
+		// Main Menu selection
+		menuSelection := mainMenu() // Show main menu to select function
+		if menuSelection == 1 {
+			cleanRecordings() // User selected to clean recordings, run function
+		} else if menuSelection == 2 {
+			prepTransfer() // User selected to prep for transfer or storage, run function
+		}
+	} else { // Use switch to chose clean or prep off -m or just exit out on invalid flag
+		switch *flagPtr {
+		case "clean":
+			{
+				cleanRecordings()
+				os.Exit(0)
+			}
+		case "archive":
+			{
+				prepTransfer()
+				os.Exit(0)
+			}
+		default:
+			{
+				fmt.Println("Invalid -m flag (clean or archive only)")
+				os.Exit(1)
+			}
+		}
 	}
 }
